@@ -1,0 +1,135 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation template to deploy a ECS cluster using CI/CD Pipeline
+Parameters:
+  VpcCIDR:
+    Type: String
+    Default: 18.0.0.0/16
+    Description: CIDR block for the VPC
+
+  PublicSubnet1CIDR:
+    Type: String
+    Default: 18.0.0.0/24
+    Description: CIDR block for the public subnet
+
+  PrivateSubnet1CIDR:
+    Type: String
+    Default: 18.0.1.0/24
+    Description: CIDR block for the private subnet
+
+  PublicSubnet2CIDR:
+    Type: String
+    Default: 18.0.2.0/24
+    Description: CIDR block for the public subnet
+
+  PrivateSubnet2CIDR:
+    Type: String
+    Default: 18.0.3.0/24
+    Description: CIDR block for the private subnet
+
+  GitHubOwner:
+    Description: Name of GitHub Owner
+    Type: String
+    Default: hammadkhaliq566
+
+  GitHubRepo:
+    Description: Name of GitHub Repo
+    Type: String
+    Default: AWS-ECS-Project
+
+  GitHubBranch:
+    Description: Name of GitHub Repo Branch
+    Type: String
+    Default: main
+
+  GitHubOAuthToken:
+    Type: String
+    NoEcho: true
+    Default: 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
+
+  BuckerName:
+    Description: S3 Bucket Name
+    Type: String
+    Default: ecs-deployment-devops-project
+
+Resources:
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - codepipeline.amazonaws.com
+                - codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Resource:
+                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/demo'
+                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/demo:*'
+                  - '*'
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+              - Effect: Allow
+                Resource:
+                  - 'arn:aws:s3:::codepipeline-us-east-1-*'
+                Action:
+                  - 's3:PutObject'
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                  - 's3:GetBucketAcl'
+                  - 's3:GetBucketLocation'
+              - Effect: Allow
+                Action:
+                  - 'ecr:GetAuthorizationToken'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:GetRepositoryPolicy'
+                  - 'ecr:DescribeRepositories'
+                  - 'ecr:ListImages'
+                  - 'ecr:DescribeImages'
+                  - 'ecr:BatchGetImage'
+                  - 'ecr:GetLifecyclePolicy'
+                  - 'ecr:GetLifecyclePolicyPreview'
+                  - 'ecr:GetRepositoryPolicyPreview'
+                  - 'ecr:PutLifecyclePolicy'
+                  - 'ecr:PutImageTagMutability'
+                  - 'ecr:PutImageScanningConfiguration'
+                  - 'ecr:StartImageScan'
+                  - 'ecr:BatchDeleteImage'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'codebuild:CreateReportGroup'
+                  - 'codebuild:CreateReport'
+                  - 'codebuild:UpdateReport'
+                  - 'codebuild:BatchPutTestCases'
+                  - 'codebuild:BatchPutCodeCoverages'
+                Resource:
+                  - 'arn:aws:codebuild:us-east-1:433337163311:report-group/demo-*'
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: CodeBuildProject
+      ServiceRole: !Ref CodePipelineRole
+      Source:
+        Type: GITHUB
+        Location: https://github.com/hammadkhaliq566/AWS-ECS-Project.git
+        BuildSpec: buildspec.yml
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        PrivilegedMode: true 

@@ -53,209 +53,209 @@ Parameters:
     Default: ecs-deployment-devops-project
 
 Resources:
-  # PrivateVPC:
-  #   Type: AWS::EC2::VPC
-  #   Properties:
-  #     CidrBlock: !Ref VpcCIDR
-  #     Tags:
-  #     - Key: stack
-  #       Value: production
+  PrivateVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      Tags:
+      - Key: stack
+        Value: production
 
-  # InternetGateway:
-  #   Type: AWS::EC2::InternetGateway
-  #   Properties:
-  #     Tags:
-  #       - Key: Name
-  #         Value: InternetGateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: InternetGateway
 
-  # VPCGatewayAttachment:
-  #   Type: AWS::EC2::VPCGatewayAttachment
-  #   Properties:
-  #     VpcId: !Ref PrivateVPC
-  #     InternetGatewayId: !Ref InternetGateway
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref PrivateVPC
+      InternetGatewayId: !Ref InternetGateway
 
-  # PublicSubnet1:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref PrivateVPC
-  #     CidrBlock: !Ref PublicSubnet1CIDR
-  #     AvailabilityZone: "us-east-1a"
-  #     Tags:
-  #     - Key: Name
-  #       Value: PublicSubnet-az-1
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVPC
+      CidrBlock: !Ref PublicSubnet1CIDR
+      AvailabilityZone: "us-east-1a"
+      Tags:
+      - Key: Name
+        Value: PublicSubnet-az-1
 
-  # PrivateSubnet1:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref PrivateVPC
-  #     CidrBlock: !Ref PrivateSubnet1CIDR
-  #     AvailabilityZone: "us-east-1a"
-  #     Tags:
-  #     - Key: Name
-  #       Value: PrivateSubnet-az-1
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVPC
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      AvailabilityZone: "us-east-1a"
+      Tags:
+      - Key: Name
+        Value: PrivateSubnet-az-1
 
-  # PublicSubnet2:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref PrivateVPC
-  #     CidrBlock: !Ref PublicSubnet2CIDR
-  #     AvailabilityZone: "us-east-1b"
-  #     Tags:
-  #     - Key: Name
-  #       Value: PublicSubnet-az-2
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVPC
+      CidrBlock: !Ref PublicSubnet2CIDR
+      AvailabilityZone: "us-east-1b"
+      Tags:
+      - Key: Name
+        Value: PublicSubnet-az-2
 
-  # PrivateSubnet2:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref PrivateVPC
-  #     CidrBlock: !Ref PrivateSubnet2CIDR
-  #     AvailabilityZone: "us-east-1b"
-  #     Tags:
-  #     - Key: Name
-  #       Value: PrivateSubnet-az-2
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref PrivateVPC
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      AvailabilityZone: "us-east-1b"
+      Tags:
+      - Key: Name
+        Value: PrivateSubnet-az-2
 
-  # NATGatewayEIP1:
-  #   Type: AWS::EC2::EIP
-  #   Properties:
-  #     Domain: vpc
+  NATGatewayEIP1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
 
-  # NATGateway1:
-  #   Type: AWS::EC2::NatGateway
-  #   Properties:
-  #     AllocationId: !GetAtt NATGatewayEIP1.AllocationId
-  #     SubnetId: !Ref PublicSubnet1
+  NATGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP1.AllocationId
+      SubnetId: !Ref PublicSubnet1
 
-  # NATGatewayEIP2:
-  #   Type: AWS::EC2::EIP
-  #   Properties:
-  #     Domain: vpc
+  NATGatewayEIP2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
 
-  # NATGateway2:
-  #   Type: AWS::EC2::NatGateway
-  #   Properties:
-  #     AllocationId: !GetAtt NATGatewayEIP2.AllocationId
-  #     SubnetId: !Ref PublicSubnet2
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
 
-  # PrivateRouteTable1:
-  #   Type: AWS::EC2::RouteTable
-  #   Properties:
-  #     VpcId: !Ref PrivateVPC
-  #     Tags:
-  #     - Key: Name
-  #       Value: PrivateRouteTable1
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrivateVPC
+      Tags:
+      - Key: Name
+        Value: PrivateRouteTable1
 
-  # PrivateRouteTable2:
-  #   Type: AWS::EC2::RouteTable
-  #   Properties:
-  #     VpcId: !Ref PrivateVPC
-  #     Tags:
-  #     - Key: Name
-  #       Value: PrivateRouteTable2
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrivateVPC
+      Tags:
+      - Key: Name
+        Value: PrivateRouteTable2
   
-  # PrivateRoute1:
-  #   Type: AWS::EC2::Route
-  #   DependsOn: VPCGatewayAttachment
-  #   Properties:
-  #     RouteTableId: !Ref PrivateRouteTable1
-  #     DestinationCidrBlock: 0.0.0.0/0
-  #     NatGatewayId: !Ref NATGateway1
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
 
-  # PrivateRoute2:
-  #   Type: AWS::EC2::Route
-  #   DependsOn: VPCGatewayAttachment
-  #   Properties:
-  #     RouteTableId: !Ref PrivateRouteTable2
-  #     DestinationCidrBlock: 0.0.0.0/0
-  #     NatGatewayId: !Ref NATGateway2
+  PrivateRoute2:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
   
-  # PrivateSubnet1Association:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     RouteTableId: !Ref PrivateRouteTable1
-  #     SubnetId: !Ref PrivateSubnet1
+  PrivateSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
 
-  # PrivateSubnet2Association:
-  #   Type: AWS::EC2::SubnetRouteTableAssociation
-  #   Properties:
-  #     RouteTableId: !Ref PrivateRouteTable2
-  #     SubnetId: !Ref PrivateSubnet2
+  PrivateSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
 
-  # ECSSecurityGroup:
-  #   Type: AWS::EC2::SecurityGroup
-  #   Properties:
-  #     GroupDescription: ECS Security Group for tasks
-  #     VpcId: !Ref PrivateVPC
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS Security Group for tasks
+      VpcId: !Ref PrivateVPC
 
-  # # IAMRole:
-  # #   Type: AWS::IAM::Role
-  # #   Properties:
-  # #     AssumeRolePolicyDocument:
-  # #       Version: 2008-10-17
-  # #       Statement:
-  # #         - Sid: ''
-  # #           Effect: Allow
-  # #           Principal:
-  # #             Service: ecs.amazonaws.com
-  # #           Action: 'sts:AssumeRole'
-  # #     ManagedPolicyArns:
-  # #       - 'arn:aws:iam::433337163311:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS'
-
-  # MyECRRepository:
-  #   Type: AWS::ECR::Repository
-  #   Properties:
-  #     RepositoryName: ecs-flaskapp
-  #     ImageScanningConfiguration:
-  #       ScanOnPush: true
-  #     ImageTagMutability: MUTABLE
-
-  # MySecret:
-  #   Type: AWS::SecretsManager::Secret
-  #   Properties:
-  #     Name: MyPrivateRegistryCredentials
-  #     Description: Secret for Private Registry Authentication
-  #     SecretString: '{"username": "hammad", "password": "HammadKhaliq@0064"}'
-
-  # ECSCluster:
-  #   Type: AWS::ECS::Cluster
-  #   Properties:
-  #     ClusterName: ECSCluster
-
-  # ECSApplicationLoadBalancer:
-  #   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-  #   Properties:
-  #     Name: MyLoadBalancer
-  #     Subnets:
-  #       - !Ref PrivateSubnet1
-  #       - !Ref PrivateSubnet2
-  #     SecurityGroups:
-  #       - !Ref ECSSecurityGroup
-  #     Type: application
-  
-  # ECSTargetGroup:
-  #   Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  #   Properties:
-  #     Name: ECSTargetGroup
-  #     Port: 80
-  #     Protocol: HTTP
-  #     VpcId: !Ref PrivateVPC
-
-  # S3bucketcodeartifact:
-  #   Type: AWS::S3::Bucket
-  #   Properties:
-  #     BucketName: !Ref BuckerName
-
-  # CodePipelineRole:
+  # IAMRole:
   #   Type: AWS::IAM::Role
   #   Properties:
   #     AssumeRolePolicyDocument:
-  #       Version: "2012-10-17"
+  #       Version: 2008-10-17
   #       Statement:
-  #         Effect: Allow
-  #         Principal:
-  #           Service: codepipeline.amazonaws.com
-  #         Action: sts:AssumeRole
+  #         - Sid: ''
+  #           Effect: Allow
+  #           Principal:
+  #             Service: ecs.amazonaws.com
+  #           Action: 'sts:AssumeRole'
   #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
+  #       - 'arn:aws:iam::433337163311:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS'
+
+  MyECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: ecs-flaskapp
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+
+  MySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: MyPrivateRegistryCredentials
+      Description: Secret for Private Registry Authentication
+      SecretString: '{"username": "hammad", "password": "HammadKhaliq@0064"}'
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: ECSCluster
+
+  ECSApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MyLoadBalancer
+      Subnets:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroups:
+        - !Ref ECSSecurityGroup
+      Type: application
+  
+  ECSTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: ECSTargetGroup
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref PrivateVPC
+
+  S3bucketcodeartifact:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BuckerName
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: codepipeline.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
 
   # GithubWebhook:
   #   Type: 'AWS::CodePipeline::Webhook'
@@ -271,21 +271,21 @@ Resources:
   #     TargetAction: Source
   #     TargetPipelineVersion: !GetAtt CodePipeline.Version
 
-  CodeBuildProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: CodeBuildProject
-      ServiceRole: !Ref CodePipelineRole.Arn
-      Source:
-        Type: GITHUB
-        Location: https://github.com/${GitHubOwner}/${GitHubRepo}.git
-        Buildspec: buildspec.yml
-      Artifacts:
-        Type: NO_ARTIFACTS
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:4.0
+  # CodeBuildProject:
+  #   Type: AWS::CodeBuild::Project
+  #   Properties:
+  #     Name: CodeBuildProject
+  #     ServiceRole: !Ref CodePipelineRole.Arn
+  #     Source:
+  #       Type: GITHUB
+  #       Location: https://github.com/${GitHubOwner}/${GitHubRepo}.git
+  #       Buildspec: buildspec.yml
+  #     Artifacts:
+  #       Type: NO_ARTIFACTS
+  #     Environment:
+  #       Type: LINUX_CONTAINER
+  #       ComputeType: BUILD_GENERAL1_SMALL
+  #       Image: aws/codebuild/standard:4.0
 
   # CodePipeline:
   #   Type: AWS::CodePipeline::Pipeline

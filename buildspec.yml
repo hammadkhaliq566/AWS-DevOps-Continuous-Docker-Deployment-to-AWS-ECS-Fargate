@@ -3,16 +3,9 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      # Install AWS CLI and Docker
-      - apt-get update
-      - apt-get install -y python3-pip
-      - pip3 install --upgrade awscli
-      - apt-get install -y docker.io
-
       # Log in to Amazon ECR
-      - $(aws ecr get-login-password  --no-include-email --region us-east-1)
-      - $(docker login --username AWS --password-stdin 433337163311.dkr.ecr.us-east-1.amazonaws.com)
-
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 433337163311.dkr.ecr.us-east-1.amazonaws.com
+      
   build:
     commands:
       # Build the Docker image
@@ -21,7 +14,7 @@ phases:
   post_build:
     commands:
       # Push the Docker image to Amazon ECR
-      - docker tag ecsflaskapp:latest 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
+      - docker tag ecsflaskapp 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
       - docker push 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
 
       # Update ECS service with the new task definition
