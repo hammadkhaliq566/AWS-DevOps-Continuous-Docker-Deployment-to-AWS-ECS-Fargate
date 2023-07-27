@@ -1,0 +1,34 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      # Install AWS CLI and Docker
+      - apt-get update
+      - apt-get install -y python3-pip
+      - pip3 install --upgrade awscli
+      - apt-get install -y docker.io
+
+      # Log in to Amazon ECR
+      - $(aws ecr get-login-password  --no-include-email --region us-east-1)
+      - $(docker login --username AWS --password-stdin 433337163311.dkr.ecr.us-east-1.amazonaws.com)
+
+  build:
+    commands:
+      # Build the Docker image
+      - docker build -t ecsflaskapp .
+
+  post_build:
+    commands:
+      # Push the Docker image to Amazon ECR
+      - docker tag ecsflaskapp:latest 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
+      - docker push 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
+
+      # Update ECS service with the new task definition
+      # - ecs_task_definition=$(aws ecs describe-services --cluster ECSCluster --services MyEcsService --query 'services[0].taskDefinition' --output text)
+      # - aws ecs update-service --cluster ECSCluster --service MyEcsService --task-definition $ecs_task_definition
+
+artifacts:
+  files:
+    # You don't need any artifacts, so we leave this section empty
+  discard-paths: yes

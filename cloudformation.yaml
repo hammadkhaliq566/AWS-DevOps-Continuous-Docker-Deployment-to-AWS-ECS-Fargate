@@ -1,0 +1,361 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation template to deploy a ECS cluster using CI/CD Pipeline
+Parameters:
+  VpcCIDR:
+    Type: String
+    Default: 18.0.0.0/16
+    Description: CIDR block for the VPC
+
+  PublicSubnet1CIDR:
+    Type: String
+    Default: 18.0.0.0/24
+    Description: CIDR block for the public subnet
+
+  PrivateSubnet1CIDR:
+    Type: String
+    Default: 18.0.1.0/24
+    Description: CIDR block for the private subnet
+
+  PublicSubnet2CIDR:
+    Type: String
+    Default: 18.0.2.0/24
+    Description: CIDR block for the public subnet
+
+  PrivateSubnet2CIDR:
+    Type: String
+    Default: 18.0.3.0/24
+    Description: CIDR block for the private subnet
+
+  GitHubOwner:
+    Description: Name of GitHub Owner
+    Type: String
+    Default: hammadkhaliq566
+
+  GitHubRepo:
+    Description: Name of GitHub Repo
+    Type: String
+    Default: AWS-ECS-Project
+
+  GitHubBranch:
+    Description: Name of GitHub Repo Branch
+    Type: String
+    Default: main
+
+  GitHubOAuthToken:
+    Type: String
+    NoEcho: true
+    Default: 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
+
+  BuckerName:
+    Description: S3 Bucket Name
+    Type: String
+    Default: ecs-deployment-devops-project
+
+Resources:
+  # PrivateVPC:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     CidrBlock: !Ref VpcCIDR
+  #     Tags:
+  #     - Key: stack
+  #       Value: production
+
+  # InternetGateway:
+  #   Type: AWS::EC2::InternetGateway
+  #   Properties:
+  #     Tags:
+  #       - Key: Name
+  #         Value: InternetGateway
+
+  # VPCGatewayAttachment:
+  #   Type: AWS::EC2::VPCGatewayAttachment
+  #   Properties:
+  #     VpcId: !Ref PrivateVPC
+  #     InternetGatewayId: !Ref InternetGateway
+
+  # PublicSubnet1:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref PrivateVPC
+  #     CidrBlock: !Ref PublicSubnet1CIDR
+  #     AvailabilityZone: "us-east-1a"
+  #     Tags:
+  #     - Key: Name
+  #       Value: PublicSubnet-az-1
+
+  # PrivateSubnet1:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref PrivateVPC
+  #     CidrBlock: !Ref PrivateSubnet1CIDR
+  #     AvailabilityZone: "us-east-1a"
+  #     Tags:
+  #     - Key: Name
+  #       Value: PrivateSubnet-az-1
+
+  # PublicSubnet2:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref PrivateVPC
+  #     CidrBlock: !Ref PublicSubnet2CIDR
+  #     AvailabilityZone: "us-east-1b"
+  #     Tags:
+  #     - Key: Name
+  #       Value: PublicSubnet-az-2
+
+  # PrivateSubnet2:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref PrivateVPC
+  #     CidrBlock: !Ref PrivateSubnet2CIDR
+  #     AvailabilityZone: "us-east-1b"
+  #     Tags:
+  #     - Key: Name
+  #       Value: PrivateSubnet-az-2
+
+  # NATGatewayEIP1:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
+
+  # NATGateway1:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     AllocationId: !GetAtt NATGatewayEIP1.AllocationId
+  #     SubnetId: !Ref PublicSubnet1
+
+  # NATGatewayEIP2:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
+
+  # NATGateway2:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     AllocationId: !GetAtt NATGatewayEIP2.AllocationId
+  #     SubnetId: !Ref PublicSubnet2
+
+  # PrivateRouteTable1:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref PrivateVPC
+  #     Tags:
+  #     - Key: Name
+  #       Value: PrivateRouteTable1
+
+  # PrivateRouteTable2:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     VpcId: !Ref PrivateVPC
+  #     Tags:
+  #     - Key: Name
+  #       Value: PrivateRouteTable2
+  
+  # PrivateRoute1:
+  #   Type: AWS::EC2::Route
+  #   DependsOn: VPCGatewayAttachment
+  #   Properties:
+  #     RouteTableId: !Ref PrivateRouteTable1
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     NatGatewayId: !Ref NATGateway1
+
+  # PrivateRoute2:
+  #   Type: AWS::EC2::Route
+  #   DependsOn: VPCGatewayAttachment
+  #   Properties:
+  #     RouteTableId: !Ref PrivateRouteTable2
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     NatGatewayId: !Ref NATGateway2
+  
+  # PrivateSubnet1Association:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref PrivateRouteTable1
+  #     SubnetId: !Ref PrivateSubnet1
+
+  # PrivateSubnet2Association:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref PrivateRouteTable2
+  #     SubnetId: !Ref PrivateSubnet2
+
+  # ECSSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupDescription: ECS Security Group for tasks
+  #     VpcId: !Ref PrivateVPC
+
+  # # IAMRole:
+  # #   Type: AWS::IAM::Role
+  # #   Properties:
+  # #     AssumeRolePolicyDocument:
+  # #       Version: 2008-10-17
+  # #       Statement:
+  # #         - Sid: ''
+  # #           Effect: Allow
+  # #           Principal:
+  # #             Service: ecs.amazonaws.com
+  # #           Action: 'sts:AssumeRole'
+  # #     ManagedPolicyArns:
+  # #       - 'arn:aws:iam::433337163311:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS'
+
+  # MyECRRepository:
+  #   Type: AWS::ECR::Repository
+  #   Properties:
+  #     RepositoryName: ecs-flaskapp
+  #     ImageScanningConfiguration:
+  #       ScanOnPush: true
+  #     ImageTagMutability: MUTABLE
+
+  # MySecret:
+  #   Type: AWS::SecretsManager::Secret
+  #   Properties:
+  #     Name: MyPrivateRegistryCredentials
+  #     Description: Secret for Private Registry Authentication
+  #     SecretString: '{"username": "hammad", "password": "HammadKhaliq@0064"}'
+
+  # ECSCluster:
+  #   Type: AWS::ECS::Cluster
+  #   Properties:
+  #     ClusterName: ECSCluster
+
+  # ECSApplicationLoadBalancer:
+  #   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  #   Properties:
+  #     Name: MyLoadBalancer
+  #     Subnets:
+  #       - !Ref PrivateSubnet1
+  #       - !Ref PrivateSubnet2
+  #     SecurityGroups:
+  #       - !Ref ECSSecurityGroup
+  #     Type: application
+  
+  # ECSTargetGroup:
+  #   Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  #   Properties:
+  #     Name: ECSTargetGroup
+  #     Port: 80
+  #     Protocol: HTTP
+  #     VpcId: !Ref PrivateVPC
+
+  # S3bucketcodeartifact:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     BucketName: !Ref BuckerName
+
+  # CodePipelineRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         Effect: Allow
+  #         Principal:
+  #           Service: codepipeline.amazonaws.com
+  #         Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
+
+  # GithubWebhook:
+  #   Type: 'AWS::CodePipeline::Webhook'
+  #   Properties:
+  #     Authentication: GITHUB_HMAC
+  #     AuthenticationConfiguration:
+  #         SecretToken: !Ref GitHubOAuthToken
+  #     RegisterWithThirdParty: 'true'
+  #     Filters:
+  #     - JsonPath: "$.ref"
+  #       MatchEquals: refs/heads/{Branch}
+  #     TargetPipeline: !Ref CodePipeline
+  #     TargetAction: Source
+  #     TargetPipelineVersion: !GetAtt CodePipeline.Version
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: CodeBuildProject
+      ServiceRole: !Ref CodePipelineRole.Arn
+      Source:
+        Type: GITHUB
+        Location: https://github.com/${GitHubOwner}/${GitHubRepo}.git
+        Buildspec: buildspec.yml
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+
+  # CodePipeline:
+  #   Type: AWS::CodePipeline::Pipeline
+  #   Properties:
+  #     Name: GluePipeline
+  #     ArtifactStore:
+  #       Type: S3
+  #       Location: !Sub ${BuckerName}
+  #     RestartExecutionOnUpdate: true
+  #     RoleArn: !GetAtt CodePipelineRole.Arn
+  #     Stages:
+  #     - Name: Source
+  #       Actions:
+  #       - Name: Source
+  #         InputArtifacts: []
+  #         ActionTypeId:
+  #           Category: Source
+  #           Owner: ThirdParty
+  #           Version: 1
+  #           Provider: GitHub
+  #         OutputArtifacts:
+  #         - Name: SourceCode
+  #         Configuration:
+  #           Owner: !Ref GitHubOwner
+  #           Repo: !Ref GitHubRepo
+  #           Branch: !Ref GitHubBranch
+  #           PollForSourceChanges: false
+  #           OAuthToken: !Ref GitHubOAuthToken
+  #         RunOrder: 1
+
+
+  # ECSTaskDefinition:
+  #   Type: AWS::ECS::TaskDefinition
+  #   Properties:
+  #     Family: my-ecs-task
+  #     ContainerDefinitions:
+  #       - Name: ecs-fargate-container
+  #         Image: 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
+  #         Memory: 512
+  #         Cpu: 256
+  #         PortMappings:
+  #           - ContainerPort: 80
+  #             HostPort: 80
+  #         Environment:
+  #         - Name: REGISTRY_USERNAME
+  #           Value: !Ref MySecret
+  #         - Name: REGISTRY_PASSWORD
+  #           Value: !GetAtt MySecret.SecretString.password
+
+  # MyEcsService:
+  #   Type: AWS::ECS::Service
+  #   Properties:
+  #     Cluster: !Ref ECSCluster
+  #     TaskDefinition: !Ref ECSTaskDefinition
+  #     DesiredCount: 2
+  #     LaunchType: Fargate
+  #     LoadBalancers:
+  #       - ContainerName: ecs-fargate-container
+  #         ContainerPort: 80
+  #         TargetGroupArn: !Ref ECSTargetGroup
+  #     PlacementStrategies:
+  #       - Field: instanceId
+  #         Type: spread
+  #     PlacementConstraints:
+  #       - Type: distinctInstance
+  #     NetworkConfiguration:
+  #       AwsvpcConfiguration:
+  #         AssignPublicIp: DISABLED
+  #         Subnets:
+  #           - !Ref PrivateSubnet1
+  #           - !Ref PrivateSubnet2
+  #         SecurityGroups:
+  #           - !Ref ECSSecurityGroup

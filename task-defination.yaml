@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create an ECS Cluster and launch tasks in multi-AZ private subnets
+
+Resources:
+
+  MyTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: my-ecs-task
+      ContainerDefinitions:
+        - Name: ecs-fargate-container
+          Image: ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ecsflaskapp:latest
+          Memory: 512
+          Cpu: 256
+          PortMappings:
+            - ContainerPort: 80
+              HostPort: 80
+          Environment:
+          - Name: REGISTRY_USERNAME
+            Value: !Ref MySecret
+          - Name: REGISTRY_PASSWORD
+            Value: !GetAtt MySecret.SecretString.password
+
+  MyEcsService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref MyEcsCluster
+      TaskDefinition: !Ref MyTaskDefinition
+      DesiredCount: 2
+      LaunchType: EC2
+      LoadBalancers:
+        - ContainerName: my-container
+          ContainerPort: 80
+          TargetGroupArn: YOUR_TARGET_GROUP_ARN
+      PlacementStrategies:
+        - Field: instanceId
+          Type: spread
+      PlacementConstraints:
+        - Type: distinctInstance
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !Ref MySubnet1
+            - !Ref MySubnet2
+          SecurityGroups:
+            - !Ref MySecurityGroup
+
+Outputs:
+  ClusterName:
+    Value: !Ref MyEcsCluster
+    Description: ECS Cluster Name
+
+  TaskDefinitionArn:
+    Value: !Ref MyTaskDefinition
+    Description: ECS Task Definition ARN
+
+  ServiceName:
+    Value: !GetAtt MyEcsService.Name
+    Description: ECS Service Name
