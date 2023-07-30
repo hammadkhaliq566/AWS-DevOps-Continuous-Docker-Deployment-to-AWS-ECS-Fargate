@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation template to deploy an ECS cluster using CI/CD Pipeline
+
+Resources:
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: flaskapp
+          Image: 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
+          PortMappings:
+            - ContainerPort: 80
+              HostPort: 80
+              Protocol: 'tcp'
+          Essential: true
+          LogConfiguration: 
+            LogDriver: awslogs
+            Options: 
+              awslogs-create-group: true
+              awslogs-group: "task-definition-family"
+              awslogs-region: us-east-1
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: NAME
+              Value: World
+      Family: TaskDefinationECS-Service
+      ExecutionRoleArn: arn:aws:iam::433337163311:role/ecsTaskExecutionRole
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 0.5vCPU
+      Memory: 1GB
+      RuntimePlatform:
+        cpuArchitecture: X86_64
+        operatingSystemFamily: LINUX

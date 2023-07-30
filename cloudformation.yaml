@@ -114,10 +114,46 @@ Resources:
       - Key: Name
         Value: PrivateSubnet-az-2
 
+  PublicRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrivateVPC
+
+  PublicRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref PrivateVPC
+
+  PublicRoute1:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicRoute2:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable2
+
   NATGatewayEIP1:
     Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
 
   NATGateway1:
     Type: AWS::EC2::NatGateway
@@ -127,8 +163,6 @@ Resources:
 
   NATGatewayEIP2:
     Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
 
   NATGateway2:
     Type: AWS::EC2::NatGateway
@@ -154,19 +188,19 @@ Resources:
   
   PrivateRoute1:
     Type: AWS::EC2::Route
-    DependsOn: VPCGatewayAttachment
+    DependsOn: NATGateway1
     Properties:
       RouteTableId: !Ref PrivateRouteTable1
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NATGateway1
+      GatewayId: !Ref InternetGateway
 
   PrivateRoute2:
     Type: AWS::EC2::Route
-    DependsOn: VPCGatewayAttachment
+    DependsOn: NATGateway2
     Properties:
       RouteTableId: !Ref PrivateRouteTable2
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NATGateway2
+      GatewayId: !Ref InternetGateway
   
   PrivateSubnet1Association:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -188,17 +222,10 @@ Resources:
         ScanOnPush: true
       ImageTagMutability: MUTABLE
 
-  MySecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: MyPrivateRegistryCredentials
-      Description: Secret for Private Registry Authentication
-      SecretString: '{"username": "hammad", "password": "HammadKhaliq@0064"}'
-
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: ECS-Cluster-FlaskApp
+      ClusterName: ECS-Cluster-FlaskApp1
       CapacityProviders:
       - FARGATE
       - FARGATE_SPOT
@@ -214,7 +241,7 @@ Resources:
   ECSService:
     Type: AWS::ECS::Service
     Properties:
-      Cluster: ECSCluster
+      Cluster: ECS-Cluster-FlaskApp1
       TaskDefinition: arn:aws:ecs:us-east-1:433337163311:task-definition/TaskDefinatioECS-Service:2
       LaunchType: FARGATE
       ServiceName: ECS-Service
@@ -367,8 +394,8 @@ Resources:
                 Resource:
                   - 'arn:aws:codebuild:us-east-1:433337163311:report-group/demo-*'
               - Effect: Allow
-                Action: 'codebuild:StartBuild'
-                Resource: 'arn:aws:codebuild:us-east-1::project/CodeBuildProject'
+                Action: 'codebuild:*'
+                Resource: '*'
 
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
@@ -464,4 +491,3 @@ Resources:
               ProjectName: !Ref CodeBuildProject
             OutputArtifacts:
               - Name: BuildOutput
-
