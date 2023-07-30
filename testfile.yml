@@ -53,83 +53,182 @@ Parameters:
     Default: ecs-deployment-devops-project
 
 Resources:
-  CodePipelineRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: 
-                - codepipeline.amazonaws.com
-                - codebuild.amazonaws.com
-            Action: 'sts:AssumeRole'
-      Policies:
-        - PolicyName: CodePipelinePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Resource:
-                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/demo'
-                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/demo:*'
-                  - '*'
-                Action:
-                  - 'logs:CreateLogGroup'
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-              - Effect: Allow
-                Resource:
-                  - 'arn:aws:s3:::codepipeline-us-east-1-*'
-                Action:
-                  - 's3:PutObject'
-                  - 's3:GetObject'
-                  - 's3:GetObjectVersion'
-                  - 's3:GetBucketAcl'
-                  - 's3:GetBucketLocation'
-              - Effect: Allow
-                Action:
-                  - 'ecr:GetAuthorizationToken'
-                  - 'ecr:GetDownloadUrlForLayer'
-                  - 'ecr:BatchCheckLayerAvailability'
-                  - 'ecr:GetRepositoryPolicy'
-                  - 'ecr:DescribeRepositories'
-                  - 'ecr:ListImages'
-                  - 'ecr:DescribeImages'
-                  - 'ecr:BatchGetImage'
-                  - 'ecr:GetLifecyclePolicy'
-                  - 'ecr:GetLifecyclePolicyPreview'
-                  - 'ecr:GetRepositoryPolicyPreview'
-                  - 'ecr:PutLifecyclePolicy'
-                  - 'ecr:PutImageTagMutability'
-                  - 'ecr:PutImageScanningConfiguration'
-                  - 'ecr:StartImageScan'
-                  - 'ecr:BatchDeleteImage'
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - 'codebuild:CreateReportGroup'
-                  - 'codebuild:CreateReport'
-                  - 'codebuild:UpdateReport'
-                  - 'codebuild:BatchPutTestCases'
-                  - 'codebuild:BatchPutCodeCoverages'
-                Resource:
-                  - 'arn:aws:codebuild:us-east-1:433337163311:report-group/demo-*'
 
-  CodeBuildProject:
-    Type: AWS::CodeBuild::Project
+ ---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: The template used to create an ECS Service from the ECS Console.
+Parameters:
+  ECSClusterName:
+    Type: String
+    Default: demo
+  SecurityGroupName:
+    Type: CommaDelimitedList
+    Default: ECS-SG
+  SubnetIDs:
+    Type: CommaDelimitedList
+    Default: subnet-08e4323cf74cb322a,subnet-02465a0b825df1219
+  VpcID:
+    Type: String
+    Default: vpc-0945ecce97364ef42
+  LoadBalancerName:
+    Type: String
+    Default: ALB-ECS-Service
+Resources:
+  ECSService:
+    Type: AWS::ECS::Service
     Properties:
-      Name: CodeBuildProject
-      ServiceRole: !Ref CodePipelineRole
-      Source:
-        Type: GITHUB
-        Location: https://github.com/hammadkhaliq566/AWS-ECS-Project.git
-        BuildSpec: buildspec.yml
-      Artifacts:
-        Type: NO_ARTIFACTS
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
-        PrivilegedMode: true 
+      Cluster: demo
+      TaskDefinition: arn:aws:ecs:us-east-1:433337163311:task-definition/TaskDefinatioECS-Service:2
+      LaunchType: FARGATE
+      ServiceName: ECS-Service
+      SchedulingStrategy: REPLICA
+      DesiredCount: 2
+      LoadBalancers:
+      - ContainerName: flaskapp
+        ContainerPort: 80
+        LoadBalancerName:
+          Ref: AWS::NoValue
+        TargetGroupArn:
+          Ref: TargetGroup
+      HealthCheckGracePeriodSeconds: '10'
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+          - Ref: SecurityGroup
+          Subnets:
+            Ref: SubnetIDs
+      PlatformVersion: LATEST
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      DeploymentController:
+        Type: ECS
+      ServiceConnectConfiguration:
+        Enabled: false
+      Tags: []
+      EnableECSManagedTags: true
+    DependsOn:
+    - Listener
+    
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroup for ECS
+      GroupName: ECS-SG
+      VpcId: vpc-0945ecce97364ef42
+      SecurityGroupIngress:
+      - FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+      - FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+        CidrIpv6: "::/0"
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
+      Name: ALB-ECS-Service
+      SecurityGroups:
+      - Ref: SecurityGroup
+      Subnets:
+        Ref: SubnetIDs
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: "/"
+      Name: ECS-TG
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      VpcId:
+        Ref: VpcID
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroup
+      LoadBalancerArn:
+        Ref: LoadBalancer
+      Port: 80
+      Protocol: HTTP
+Outputs:
+  ClusterName:
+    Description: The cluster used to create the service.
+    Value:
+      Ref: ECSClusterName
+  ECSService:
+    Description: The created service.
+    Value:
+      Ref: ECSService
+  LoadBalancer:
+    Description: The created load balancer.
+    Value:
+      Ref: LoadBalancer
+  Listener:
+    Description: The created listener.
+    Value:
+      Ref: Listener
+  TargetGroup:
+    Description: The created target group.
+    Value:
+      Ref: TargetGroup
+
+
+
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: ECSDeploymentApp
+      ComputePlatform: Server
+
+  CodeDeployDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: ECSDeploymentApp
+      DeploymentGroupName: ECSDeploymentGroup
+      DeploymentConfigName: CodeDeployDefault.ECSCanary10Percent
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      BlueGreenDeploymentConfiguration:
+        DeploymentReadyOption:
+          ActionOnTimeout: CONTINUE_DEPLOYMENT
+        GreenFleetProvisioningOption:
+          Action: COPY_AUTO_SCALING_GROUP
+        TrafficRoutingConfig:
+          Type: TIME_BASED_CANARY
+          TimeBasedCanary:
+            CanaryPercentage: 10
+            CanariedTrafficPercent: 10
+      LoadBalancerInfo:
+        TargetGroupInfoList:
+          - Name: TargetGroup 
+
+
+      - Name: Deploy
+        Actions:
+          - Name: DeployAction
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Version: '1'
+              Provider: ECS
+            InputArtifacts:
+              - Name: SourceCode
+            Configuration:
+              ClusterName: !Ref ECSCluster
+              ServiceName: !Ref ECSService
+
+
+
+      TaskDefinition: arn:aws:ecs:us-east-1:433337163311:task-definition/ECSTaskDefination:1

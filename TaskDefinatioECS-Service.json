@@ -1,0 +1,66 @@
+{
+    "containerDefinitions": [
+        {
+            "name": "flaskapp",
+            "image": "433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "flaskapp-80-tcp",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "NAME",
+                    "value": "World"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": []
+        }
+    ],
+    "family": "TaskDefinatioECS-Service",
+    "executionRoleArn": "arn:aws:iam::433337163311:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "revision": 2,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": ".25",
+    "memory": ".5",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "registeredAt": "2023-07-30T11:47:36.063Z",
+    "registeredBy": "arn:aws:iam::433337163311:user/hammad",
+    "tags": []
+}

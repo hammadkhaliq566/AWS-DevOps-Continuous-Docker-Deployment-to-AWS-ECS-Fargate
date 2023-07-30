@@ -40,12 +40,12 @@ Parameters:
   GitHubBranch:
     Description: Name of GitHub Repo Branch
     Type: String
-    Default: main
+    Default: master
 
   GitHubOAuthToken:
     Type: String
     NoEcho: true
-    Default: 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
+    Default: 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
 
   BuckerName:
     Description: S3 Bucket Name
@@ -180,26 +180,6 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable2
       SubnetId: !Ref PrivateSubnet2
 
-  ECSSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: ECS Security Group for tasks
-      VpcId: !Ref PrivateVPC
-
-  # IAMRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: 2008-10-17
-  #       Statement:
-  #         - Sid: ''
-  #           Effect: Allow
-  #           Principal:
-  #             Service: ecs.amazonaws.com
-  #           Action: 'sts:AssumeRole'
-  #     ManagedPolicyArns:
-  #       - 'arn:aws:iam::433337163311:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS'
-
   MyECRRepository:
     Type: AWS::ECR::Repository
     Properties:
@@ -218,144 +198,270 @@ Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: ECSCluster
+      ClusterName: ECS-Cluster-FlaskApp
+      CapacityProviders:
+      - FARGATE
+      - FARGATE_SPOT
+      ClusterSettings:
+      - Name: containerInsights
+        Value: enabled
+      Configuration:
+        ExecuteCommandConfiguration:
+          Logging: DEFAULT
+      ServiceConnectDefaults:
+        Namespace: ECSClusterNamespace
 
-  ECSApplicationLoadBalancer:
+  ECSService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: ECSCluster
+      TaskDefinition: arn:aws:ecs:us-east-1:433337163311:task-definition/TaskDefinatioECS-Service:2
+      LaunchType: FARGATE
+      ServiceName: ECS-Service
+      SchedulingStrategy: REPLICA
+      DesiredCount: 2
+      LoadBalancers:
+      - ContainerName: flaskapp
+        ContainerPort: 80
+        TargetGroupArn:
+          Ref: TargetGroup
+      HealthCheckGracePeriodSeconds: '10'
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+          - Ref: SecurityGroup
+          Subnets:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+      PlatformVersion: LATEST
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      DeploymentController:
+        Type: ECS
+      ServiceConnectConfiguration:
+        Enabled: false
+      Tags: []
+      EnableECSManagedTags: true
+    DependsOn:
+    - Listener
+    
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroup for ECS
+      GroupName: ECS-SG
+      VpcId: !Ref PrivateVPC
+      SecurityGroupIngress:
+      - FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+      - FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+        CidrIpv6: "::/0"
+        
+  LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: MyLoadBalancer
+      Type: application
+      Name: ALB-ECS-Service
+      SecurityGroups:
+      - Ref: SecurityGroup
       Subnets:
         - !Ref PrivateSubnet1
         - !Ref PrivateSubnet2
-      SecurityGroups:
-        - !Ref ECSSecurityGroup
-      Type: application
-  
-  ECSTargetGroup:
+
+  TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: ECSTargetGroup
+      HealthCheckPath: "/"
+      Name: ECS-TG
       Port: 80
       Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
       VpcId: !Ref PrivateVPC
 
-  S3bucketcodeartifact:
-    Type: AWS::S3::Bucket
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      BucketName: !Ref BuckerName
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroup
+      LoadBalancerArn:
+        Ref: LoadBalancer
+      Port: 80
+      Protocol: HTTP
 
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
-          Effect: Allow
-          Principal:
-            Service: codepipeline.amazonaws.com
-          Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSCodePipelineFullAccess
+          - Effect: Allow
+            Principal:
+              Service: 
+                - codepipeline.amazonaws.com
+                - codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Resource:
+                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/demo'
+                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/demo:*'
+                  - '*'
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+              - Effect: Allow
+                Resource:
+                  - 'arn:aws:s3:::ecs-deployment-devops-project*'
+                  - 'arn:aws:s3:::ecs-deployment-devops-project-*/*'
+                Action:
+                  - 's3:PutObject'
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                  - 's3:GetBucketAcl'
+                  - 's3:GetBucketLocation'
+                  - 's3:*'
+              - Effect: Allow
+                Action:
+                  - 'ecr:GetAuthorizationToken'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:GetRepositoryPolicy'
+                  - 'ecr:DescribeRepositories'
+                  - 'ecr:ListImages'
+                  - 'ecr:DescribeImages'
+                  - 'ecr:BatchGetImage'
+                  - 'ecr:GetLifecyclePolicy'
+                  - 'ecr:GetLifecyclePolicyPreview'
+                  - 'ecr:GetRepositoryPolicyPreview'
+                  - 'ecr:PutLifecyclePolicy'
+                  - 'ecr:PutImageTagMutability'
+                  - 'ecr:PutImage'
+                  - 'ecr:PutImageScanningConfiguration'
+                  - 'ecr:StartImageScan'
+                  - 'ecr:BatchDeleteImage'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'codebuild:CreateReportGroup'
+                  - 'codebuild:CreateReport'
+                  - 'codebuild:UpdateReport'
+                  - 'codebuild:BatchPutTestCases'
+                  - 'codebuild:BatchPutCodeCoverages'
+                Resource:
+                  - 'arn:aws:codebuild:us-east-1:433337163311:report-group/demo-*'
+              - Effect: Allow
+                Action: 'codebuild:StartBuild'
+                Resource: 'arn:aws:codebuild:us-east-1::project/CodeBuildProject'
 
-  # GithubWebhook:
-  #   Type: 'AWS::CodePipeline::Webhook'
-  #   Properties:
-  #     Authentication: GITHUB_HMAC
-  #     AuthenticationConfiguration:
-  #         SecretToken: !Ref GitHubOAuthToken
-  #     RegisterWithThirdParty: 'true'
-  #     Filters:
-  #     - JsonPath: "$.ref"
-  #       MatchEquals: refs/heads/{Branch}
-  #     TargetPipeline: !Ref CodePipeline
-  #     TargetAction: Source
-  #     TargetPipelineVersion: !GetAtt CodePipeline.Version
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: CodeBuildProject
+      ServiceRole: !Ref CodePipelineRole
+      Source:
+        Type: GITHUB
+        Location: https://github.com/hammadkhaliq566/AWS-ECS-Project.git
+        BuildSpec: buildspec.yml
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        PrivilegedMode: true
 
-  # CodeBuildProject:
-  #   Type: AWS::CodeBuild::Project
-  #   Properties:
-  #     Name: CodeBuildProject
-  #     ServiceRole: !Ref CodePipelineRole.Arn
-  #     Source:
-  #       Type: GITHUB
-  #       Location: https://github.com/${GitHubOwner}/${GitHubRepo}.git
-  #       Buildspec: buildspec.yml
-  #     Artifacts:
-  #       Type: NO_ARTIFACTS
-  #     Environment:
-  #       Type: LINUX_CONTAINER
-  #       ComputeType: BUILD_GENERAL1_SMALL
-  #       Image: aws/codebuild/standard:4.0
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codedeploy.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodeDeployServiceRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ecs:DescribeServices'
+                  - 'ecs:UpdateService'
+                Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/ECSCluster/*'
 
-  # CodePipeline:
-  #   Type: AWS::CodePipeline::Pipeline
-  #   Properties:
-  #     Name: GluePipeline
-  #     ArtifactStore:
-  #       Type: S3
-  #       Location: !Sub ${BuckerName}
-  #     RestartExecutionOnUpdate: true
-  #     RoleArn: !GetAtt CodePipelineRole.Arn
-  #     Stages:
-  #     - Name: Source
-  #       Actions:
-  #       - Name: Source
-  #         InputArtifacts: []
-  #         ActionTypeId:
-  #           Category: Source
-  #           Owner: ThirdParty
-  #           Version: 1
-  #           Provider: GitHub
-  #         OutputArtifacts:
-  #         - Name: SourceCode
-  #         Configuration:
-  #           Owner: !Ref GitHubOwner
-  #           Repo: !Ref GitHubRepo
-  #           Branch: !Ref GitHubBranch
-  #           PollForSourceChanges: false
-  #           OAuthToken: !Ref GitHubOAuthToken
-  #         RunOrder: 1
+  GithubWebhook:
+    Type: AWS::CodePipeline::Webhook
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+          SecretToken: !Ref GitHubOAuthToken
+      RegisterWithThirdParty: true
+      Filters:
+      - JsonPath: "$.ref"
+        MatchEquals: refs/heads/{Branch}
+      TargetPipeline: !Ref CodePipeline
+      TargetPipelineVersion: !GetAtt CodePipeline.Version
+      TargetAction: Source
 
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: GluePipeline
+      ArtifactStore:
+        Type: S3
+        Location: !Sub ${BuckerName}
+      RestartExecutionOnUpdate: true
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      Stages:
+      - Name: Source
+        Actions:
+        - Name: Source
+          InputArtifacts: []
+          ActionTypeId:
+            Category: Source
+            Owner: ThirdParty
+            Version: 1
+            Provider: GitHub
+          OutputArtifacts:
+          - Name: SourceCode
+          Configuration:
+            Owner: !Ref GitHubOwner
+            Repo: !Ref GitHubRepo
+            Branch: !Ref GitHubBranch
+            PollForSourceChanges: false
+            OAuthToken: !Ref GitHubOAuthToken
+          RunOrder: 1
+      - Name: Build
+        Actions:
+          - Name: BuildAction
+            ActionTypeId:
+              Category: Build
+              Owner: AWS
+              Version: '1'
+              Provider: CodeBuild
+            InputArtifacts:
+              - Name: SourceCode
+            Configuration:
+              ProjectName: !Ref CodeBuildProject
+            OutputArtifacts:
+              - Name: BuildOutput
 
-  # ECSTaskDefinition:
-  #   Type: AWS::ECS::TaskDefinition
-  #   Properties:
-  #     Family: my-ecs-task
-  #     ContainerDefinitions:
-  #       - Name: ecs-fargate-container
-  #         Image: 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
-  #         Memory: 512
-  #         Cpu: 256
-  #         PortMappings:
-  #           - ContainerPort: 80
-  #             HostPort: 80
-  #         Environment:
-  #         - Name: REGISTRY_USERNAME
-  #           Value: !Ref MySecret
-  #         - Name: REGISTRY_PASSWORD
-  #           Value: !GetAtt MySecret.SecretString.password
-
-  # MyEcsService:
-  #   Type: AWS::ECS::Service
-  #   Properties:
-  #     Cluster: !Ref ECSCluster
-  #     TaskDefinition: !Ref ECSTaskDefinition
-  #     DesiredCount: 2
-  #     LaunchType: Fargate
-  #     LoadBalancers:
-  #       - ContainerName: ecs-fargate-container
-  #         ContainerPort: 80
-  #         TargetGroupArn: !Ref ECSTargetGroup
-  #     PlacementStrategies:
-  #       - Field: instanceId
-  #         Type: spread
-  #     PlacementConstraints:
-  #       - Type: distinctInstance
-  #     NetworkConfiguration:
-  #       AwsvpcConfiguration:
-  #         AssignPublicIp: DISABLED
-  #         Subnets:
-  #           - !Ref PrivateSubnet1
-  #           - !Ref PrivateSubnet2
-  #         SecurityGroups:
-  #           - !Ref ECSSecurityGroup
