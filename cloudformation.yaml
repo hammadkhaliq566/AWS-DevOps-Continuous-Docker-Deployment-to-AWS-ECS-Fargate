@@ -45,7 +45,7 @@ Parameters:
   GitHubOAuthToken:
     Type: String
     NoEcho: true
-    Default: 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
+    Default: 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
 
   BuckerName:
     Description: S3 Bucket Name
@@ -225,7 +225,7 @@ Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: ECS-Cluster-FlaskApp1
+      ClusterName: ECS-Cluster-FlaskApp
       CapacityProviders:
       - FARGATE
       - FARGATE_SPOT
@@ -241,7 +241,7 @@ Resources:
   ECSService:
     Type: AWS::ECS::Service
     Properties:
-      Cluster: ECS-Cluster-FlaskApp1
+      Cluster: ECS-Cluster-FlaskApp
       TaskDefinition: arn:aws:ecs:us-east-1:433337163311:task-definition/TaskDefinatioECS-Service:2
       LaunchType: FARGATE
       ServiceName: ECS-Service
@@ -255,7 +255,7 @@ Resources:
       HealthCheckGracePeriodSeconds: '10'
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
+          AssignPublicIp: ENABLED
           SecurityGroups:
           - Ref: SecurityGroup
           Subnets:
@@ -346,8 +346,8 @@ Resources:
             Statement:
               - Effect: Allow
                 Resource:
-                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/demo'
-                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/demo:*'
+                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/CodePipelineRole'
+                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/CodePipelineRole:*'
                   - '*'
                 Action:
                   - 'logs:CreateLogGroup'
@@ -367,22 +367,6 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'ecr:GetAuthorizationToken'
-                  - 'ecr:GetDownloadUrlForLayer'
-                  - 'ecr:BatchCheckLayerAvailability'
-                  - 'ecr:GetRepositoryPolicy'
-                  - 'ecr:DescribeRepositories'
-                  - 'ecr:ListImages'
-                  - 'ecr:DescribeImages'
-                  - 'ecr:BatchGetImage'
-                  - 'ecr:GetLifecyclePolicy'
-                  - 'ecr:GetLifecyclePolicyPreview'
-                  - 'ecr:GetRepositoryPolicyPreview'
-                  - 'ecr:PutLifecyclePolicy'
-                  - 'ecr:PutImageTagMutability'
-                  - 'ecr:PutImage'
-                  - 'ecr:PutImageScanningConfiguration'
-                  - 'ecr:StartImageScan'
-                  - 'ecr:BatchDeleteImage'
                 Resource: '*'
               - Effect: Allow
                 Action:
@@ -392,16 +376,68 @@ Resources:
                   - 'codebuild:BatchPutTestCases'
                   - 'codebuild:BatchPutCodeCoverages'
                 Resource:
-                  - 'arn:aws:codebuild:us-east-1:433337163311:report-group/demo-*'
+                  - 'arn:aws:codebuild:us-east-1:433337163311:report-group/CodePipelineRole-*'
               - Effect: Allow
                 Action: 'codebuild:*'
                 Resource: '*'
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - codebuild.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Resource:
+              - arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/CodeBuildRole
+              - arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/CodeBuildRole:*
+              - "*"
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - ecr:*
+            - Effect: Allow
+              Resource:
+              - 'arn:aws:s3:::ecs-deployment-devops-project*'
+              - 'arn:aws:s3:::ecs-deployment-devops-project-*/*'
+              Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+            - Effect: Allow
+              Action: ecr:GetAuthorizationToken
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - codebuild:CreateReportGroup
+              - codebuild:CreateReport
+              - codebuild:UpdateReport
+              - codebuild:BatchPutTestCases
+              - codebuild:BatchPutCodeCoverages
+              Resource:
+              - arn:aws:codebuild:us-east-1:433337163311:report-group/CodeBuildRole-*
+            - Effect: Allow
+              Action: 'codebuild:*'
+              Resource: '*'
 
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: CodeBuildProject
-      ServiceRole: !Ref CodePipelineRole
+      ServiceRole: !Ref CodeBuildRole
       Source:
         Type: GITHUB
         Location: https://github.com/hammadkhaliq566/AWS-ECS-Project.git
@@ -452,7 +488,7 @@ Resources:
   CodePipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: GluePipeline
+      Name: ECS-Pipeline
       ArtifactStore:
         Type: S3
         Location: !Sub ${BuckerName}
@@ -491,3 +527,4 @@ Resources:
               ProjectName: !Ref CodeBuildProject
             OutputArtifacts:
               - Name: BuildOutput
+            RunOrder: 2
