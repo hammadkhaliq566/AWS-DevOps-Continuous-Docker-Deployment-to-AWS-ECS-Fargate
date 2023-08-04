@@ -45,7 +45,7 @@ Parameters:
   GitHubOAuthToken:
     Type: String
     NoEcho: true
-    Default: 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
+    Default: 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
 
   BuckerName:
     Description: S3 Bucket Name
@@ -237,45 +237,6 @@ Resources:
           Logging: DEFAULT
       ServiceConnectDefaults:
         Namespace: ECSClusterNamespace
-
-  ECSService:
-    Type: AWS::ECS::Service
-    Properties:
-      Cluster: ECS-Cluster-FlaskApp
-      TaskDefinition: arn:aws:ecs:us-east-1:433337163311:task-definition/TaskDefinatioECS-Service:2
-      LaunchType: FARGATE
-      ServiceName: ECS-Service
-      SchedulingStrategy: REPLICA
-      DesiredCount: 2
-      LoadBalancers:
-      - ContainerName: flaskapp
-        ContainerPort: 80
-        TargetGroupArn:
-          Ref: TargetGroup
-      HealthCheckGracePeriodSeconds: '10'
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          SecurityGroups:
-          - Ref: SecurityGroup
-          Subnets:
-            - !Ref PrivateSubnet1
-            - !Ref PrivateSubnet2
-      PlatformVersion: LATEST
-      DeploymentConfiguration:
-        MaximumPercent: 200
-        MinimumHealthyPercent: 100
-        DeploymentCircuitBreaker:
-          Enable: true
-          Rollback: true
-      DeploymentController:
-        Type: ECS
-      ServiceConnectConfiguration:
-        Enabled: false
-      Tags: []
-      EnableECSManagedTags: true
-    DependsOn:
-    - Listener
     
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -314,6 +275,18 @@ Resources:
       TargetType: ip
       HealthCheckProtocol: HTTP
       VpcId: !Ref PrivateVPC
+
+  TargetGroup2:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: "/"
+      Name: ECS-TG-2
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      VpcId: !Ref PrivateVPC
+
 
   Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -458,8 +431,11 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: codedeploy.amazonaws.com
-            Action: 'sts:AssumeRole'
+              Service:
+                - codedeploy.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
       Policies:
         - PolicyName: CodeDeployServiceRolePolicy
           PolicyDocument:
@@ -467,9 +443,45 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - 'ecs:DescribeServices'
-                  - 'ecs:UpdateService'
-                Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/ECSCluster/*'
+                  - autoscaling:CompleteLifecycleAction
+                  - autoscaling:DeleteLifecycleHook
+                  - autoscaling:DescribeAutoScalingGroups
+                  - autoscaling:DescribeLifecycleHooks
+                  - autoscaling:PutLifecycleHook
+                  - autoscaling:RecordLifecycleActionHeartbeat
+                  - ec2:DescribeInstances
+                  - ec2:DescribeTags
+                  - ec2:TerminateInstances
+                Resource: '*'
+
+  CodeDeployServiceRoleAttachment:
+    Type: AWS::IAM::PolicyAttachment
+    Properties:
+      PolicyArn: !Ref CodeDeployServiceRole
+      Roles:
+        - !Ref CodeDeployServiceRole
+
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: CodeDeployApplication
+      ComputePlatform: ECS
+
+  CodeDeployDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: CodeDeployApplication
+      DeploymentGroupName: ECSDeploymentGroup
+      DeploymentConfigName: CodeDeployDefault.ECSDeploymentConfig
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      LoadBalancerInfo:
+        TargetGroupInfoList:
+          - Name: TargetGroup
+          - Name: TargetGroup2
+      DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce
 
   GithubWebhook:
     Type: AWS::CodePipeline::Webhook
@@ -528,3 +540,20 @@ Resources:
             OutputArtifacts:
               - Name: BuildOutput
             RunOrder: 2
+      - Name: Deploy
+        Actions:
+          - Name: DeployBlueAction
+            ActionTypeId:
+              Category: Deploy
+              Owner: AWS
+              Version: '1'
+              Provider: CodeDeployToECS
+            InputArtifacts:
+              - Name: BuildOutput
+            Configuration:
+              AppSpecTemplateArtifactName: appspec.yml
+              ApplicationName: !Ref CodeDeployApplication
+              DeploymentGroupName: !Ref CodeDeployDeploymentGroup
+              TaskDefinitionTemplateArtifactName: arn:aws:ecs:us-east-1:433337163311:task-definition/TaskDefinatioECS-Service:2
+              DeploymentConfigName: CodeDeployDefault.ECSBlueGreen
+            RunOrder: 3

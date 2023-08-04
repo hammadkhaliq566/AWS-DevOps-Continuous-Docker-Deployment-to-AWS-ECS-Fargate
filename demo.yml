@@ -1,215 +1,122 @@
----
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Cloudformation template to deploy a ECS cluster using CI/CD Pipeline
+Description: CloudFormation Template for ECS Blue-Green Deployment
+
 Parameters:
-  VpcCIDR:
-    Type: String
-    Default: 18.0.0.0/16
-    Description: CIDR block for the VPC
-
-  PublicSubnet1CIDR:
-    Type: String
-    Default: 18.0.0.0/24
-    Description: CIDR block for the public subnet
-
-  PrivateSubnet1CIDR:
-    Type: String
-    Default: 18.0.1.0/24
-    Description: CIDR block for the private subnet
-
-  PublicSubnet2CIDR:
-    Type: String
-    Default: 18.0.2.0/24
-    Description: CIDR block for the public subnet
-
-  PrivateSubnet2CIDR:
-    Type: String
-    Default: 18.0.3.0/24
-    Description: CIDR block for the private subnet
-
-  GitHubOwner:
-    Description: Name of GitHub Owner
-    Type: String
-    Default: hammadkhaliq566
-
-  GitHubRepo:
-    Description: Name of GitHub Repo
-    Type: String
-    Default: AWS-ECS-Project
-
-  GitHubBranch:
-    Description: Name of GitHub Repo Branch
-    Type: String
-    Default: master
-
-  GitHubOAuthToken:
-    Type: String
-    NoEcho: true
-    Default: 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
-
-  BuckerName:
-    Description: S3 Bucket Name
-    Type: String
-    Default: ecs-deployment-devops-project
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public Subnet 1
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public Subnet 2
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private Subnet 1
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet::Id
+    Description: Private Subnet 2
 
 Resources:
-  PrivateVPC:
-    Type: AWS::EC2::VPC
+  ALBLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      CidrBlock: !Ref VpcCIDR
-      Tags:
-      - Key: stack
-        Value: production
+      Name: ALB-ECS-Service
+      Scheme: internet-facing
+      Type: application
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
 
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      Tags:
-        - Key: Name
-          Value: InternetGateway
+      LoadBalancerArn: !Ref ALBLoadBalancer
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref BlueTargetGroup
 
-  VPCGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
+  BlueTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      VpcId: !Ref PrivateVPC
-      InternetGatewayId: !Ref InternetGateway
+      Name: ECS-Blue-TG
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VpcId
 
-  PublicSubnet1:
-    Type: AWS::EC2::Subnet
+  GreenTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      VpcId: !Ref PrivateVPC
-      CidrBlock: !Ref PublicSubnet1CIDR
-      AvailabilityZone: "us-east-1a"
-      Tags:
-      - Key: Name
-        Value: PublicSubnet-az-1
+      Name: ECS-Green-TG
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VpcId
 
-  PrivateSubnet1:
-    Type: AWS::EC2::Subnet
+  ECSBlueGreenDeployment:
+    Type: AWS::CodeDeploy::DeploymentGroup
     Properties:
-      VpcId: !Ref PrivateVPC
-      CidrBlock: !Ref PrivateSubnet1CIDR
-      AvailabilityZone: "us-east-1a"
-      Tags:
-      - Key: Name
-        Value: PrivateSubnet-az-1
+      ApplicationName: !Ref CodeDeployApplication
+      DeploymentGroupName: ECSDeploymentGroup
+      DeploymentConfigName: CodeDeployDefault.ECSLinear10PercentEvery1Minutes
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      BlueGreenDeploymentConfiguration:
+        DeploymentReadyOption:
+          ActionOnTimeout: CONTINUE_DEPLOYMENT
+        GreenFleetProvisioningOption:
+          Action: COPY_AUTO_SCALING_GROUP
+        TerminationWaitTimeInMinutes: 5
+      LoadBalancerInfo:
+        TargetGroupInfoList:
+          - Name: BlueTargetGroup
+            TargetGroup: !Ref BlueTargetGroup
+          - Name: GreenTargetGroup
+            TargetGroup: !Ref GreenTargetGroup
+      Deployment:
+        Description: Blue-Green Deployment for ECS Service
+        IgnoreApplicationStopFailures: false
 
-  PublicSubnet2:
-    Type: AWS::EC2::Subnet
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
     Properties:
-      VpcId: !Ref PrivateVPC
-      CidrBlock: !Ref PublicSubnet2CIDR
-      AvailabilityZone: "us-east-1b"
-      Tags:
-      - Key: Name
-        Value: PublicSubnet-az-2
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: CodeDeployServiceRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecs:ListClusters
+                  - ecs:DescribeClusters
+                  - autoscaling:DescribeAutoScalingGroups
+                Resource: "*"
 
-  PrivateSubnet2:
-    Type: AWS::EC2::Subnet
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
     Properties:
-      VpcId: !Ref PrivateVPC
-      CidrBlock: !Ref PrivateSubnet2CIDR
-      AvailabilityZone: "us-east-1b"
-      Tags:
-      - Key: Name
-        Value: PrivateSubnet-az-2
-
-  PublicRouteTable1:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref PrivateVPC
-
-  PublicRouteTable2:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref PrivateVPC
-
-  PublicRoute1:
-    Type: AWS::EC2::Route
-    DependsOn: VPCGatewayAttachment
-    Properties:
-      RouteTableId: !Ref PublicRouteTable1
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-  PublicRoute2:
-    Type: AWS::EC2::Route
-    DependsOn: VPCGatewayAttachment
-    Properties:
-      RouteTableId: !Ref PublicRouteTable2
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-  PublicSubnet1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet1
-      RouteTableId: !Ref PublicRouteTable1
-
-  PublicSubnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet2
-      RouteTableId: !Ref PublicRouteTable2
-
-  NATGatewayEIP1:
-    Type: AWS::EC2::EIP
-
-  NATGateway1:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NATGatewayEIP1.AllocationId
-      SubnetId: !Ref PublicSubnet1
-
-  NATGatewayEIP2:
-    Type: AWS::EC2::EIP
-
-  NATGateway2:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NATGatewayEIP2.AllocationId
-      SubnetId: !Ref PublicSubnet2
-
-  PrivateRouteTable1:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref PrivateVPC
-      Tags:
-      - Key: Name
-        Value: PrivateRouteTable1
-
-  PrivateRouteTable2:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref PrivateVPC
-      Tags:
-      - Key: Name
-        Value: PrivateRouteTable2
-  
-  PrivateRoute1:
-    Type: AWS::EC2::Route
-    DependsOn: NATGateway1
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable1
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-  PrivateRoute2:
-    Type: AWS::EC2::Route
-    DependsOn: NATGateway2
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable2
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-  
-  PrivateSubnet1Association:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable1
-      SubnetId: !Ref PrivateSubnet1
-
-  PrivateSubnet2Association:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable2
-      SubnetId: !Ref PrivateSubnet2
+      ApplicationName: ECSDeploymentApp
+      ComputePlatform: ECS
