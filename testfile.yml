@@ -213,7 +213,6 @@ Parameters:
               - Name: BuildOutput
 
 
-
   CodeDeployApplication:
     Type: AWS::CodeDeploy::Application
     Properties:
@@ -223,29 +222,35 @@ Parameters:
   CodeDeployDeploymentGroup:
     Type: AWS::CodeDeploy::DeploymentGroup
     Properties:
-      ApplicationName: ECSDeploymentApp
-      DeploymentGroupName: ECSDeploymentGroup
-      DeploymentConfigName: CodeDeployDefault.ECSCanary10Percent
-      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
-      DeploymentStyle:
-        DeploymentType: BLUE_GREEN
-        DeploymentOption: WITH_TRAFFIC_CONTROL
-      BlueGreenDeploymentConfiguration:
-        DeploymentReadyOption:
-          ActionOnTimeout: CONTINUE_DEPLOYMENT
-        GreenFleetProvisioningOption:
-          Action: COPY_AUTO_SCALING_GROUP
-        TrafficRoutingConfig:
-          Type: TIME_BASED_CANARY
-          TimeBasedCanary:
-            CanaryPercentage: 10
-            CanariedTrafficPercent: 10
-    LoadBalancerInfo:
-      TargetGroupInfoList:
-        - Name: BlueTargetGroup
-          TargetGroup: !Ref BlueTargetGroup
-        - Name: GreenTargetGroup
-          TargetGroup: !Ref GreenTargetGroup
+      applicationName: TestCodeDeployApplication
+      autoRollbackConfiguration:
+        enabled: true
+        events:
+        - DEPLOYMENT_FAILURE
+      blueGreenDeploymentConfiguration:
+        deploymentReadyOption:
+          actionOnTimeout: CONTINUE_DEPLOYMENT
+          waitTimeInMinutes: 0
+        terminateBlueInstancesOnDeploymentSuccess:
+          action: TERMINATE
+          terminationWaitTimeInMinutes: 5
+      deploymentGroupName: TestCodeDeployDeploymentGroup
+      deploymentStyle:
+        deploymentOption: WITH_TRAFFIC_CONTROL
+        deploymentType: BLUE_GREEN
+      loadBalancerInfo:
+        targetGroupPairInfoList:
+        - targetGroups:
+          - name: TargetGroup01
+          - name: TargetGroup02
+          prodTrafficRoute:
+            listenerArns:
+            - arn:aws:elasticloadbalancing:us-east-1:174304792831:listener/app/TestALB/a8cafcec8f307a78/02c89168206f1d21
+      serviceRoleArn: arn:aws:iam::174304792831:role/service-role/CodeDeployServiceRole
+      ecsServices:
+      - serviceName: PostCodeECSService
+        clusterName: TestECSCluster
+
 
       - Name: Deploy
         Actions:
@@ -262,29 +267,3 @@ Parameters:
               ServiceName: !Ref ECSService
 
 
-
-      TaskDefinition: arn:aws:ecs:us-east-1:433337163311:task-definition/ECSTaskDefination:1
-
-
-
-  ECSTaskExecutionRole:
-      Type: AWS::IAM::Role
-      Properties:
-        RoleName: ECSTaskExecutionRole
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service: ecs-tasks.amazonaws.com
-              Action: 'sts:AssumeRole'
-        ManagedPolicyArns:
-          - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        Policies:
-          - PolicyName: CodeDeployServiceRolePolicy
-            PolicyDocument:
-              Version: '2012-10-17'
-              Statement:
-                - Effect: Allow
-                  Action: secretsmanager:GetSecretValue
-                  Resource: !GetAtt MySecret.Arn

@@ -14,8 +14,9 @@ phases:
   post_build:
     commands:
       # Push the Docker image to Amazon ECR
-      - docker tag ecsflaskapp 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
-      - docker push 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecsflaskapp:latest
+      - docker tag ecsflaskapp 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecs-flaskapp:latest
+      - docker push 433337163311.dkr.ecr.us-east-1.amazonaws.com/ecs-flaskapp:latest
+      - aws ecs update-service --cluster ECS-Cluster-FlaskApp --service ECS-Service --force-new-deployment
 
 artifacts:
   files:
