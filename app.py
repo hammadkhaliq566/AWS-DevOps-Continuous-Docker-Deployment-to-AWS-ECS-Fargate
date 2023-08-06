@@ -19,7 +19,7 @@ def hello():
             }
             .text-container {
                 text-align: center;
-                background-color: #FF9D00; /* Change this to your desired text container background color */
+                background-color: #008000; /* Change this to your desired text container background color */
                 padding: 20px;
             }
         </style>
