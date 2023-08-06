@@ -1,4 +1,4 @@
-# AWS DevOps Continuous Docker Deployment to AWS ECS Fargate
+# AWS DevOps Continuous Docker Deployment to AWS ECS Fargate using CloudFormation
 ## Application Architecture
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/64d25d1bf76e1f02eba460c0b4340a1c48242c29/resources/AWS%20DevOps%20Project%20ECS.drawio.png)
 
