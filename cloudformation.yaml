@@ -585,3 +585,12 @@ Resources:
                 Resource: '*'
             Version: '2012-10-17'
           PolicyName: sample-notification-rule-role-policy
+
+Outputs:
+  ALBDNSName:
+    Description: DNS name of the Application Load Balancer
+    Value: !GetAtt LoadBalancer.DNSName
+
+  ECSServiceName:
+    Description: ECS service name
+    Value: !Ref ECSService
