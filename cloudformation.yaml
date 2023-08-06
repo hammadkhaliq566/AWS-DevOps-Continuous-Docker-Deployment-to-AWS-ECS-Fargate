@@ -10,52 +10,52 @@ Parameters:
   PublicSubnet1CIDR:
     Type: String
     Default: 18.0.0.0/24
-    Description: CIDR block for the public subnet
+    Description: CIDR block for the First public subnet
 
   PrivateSubnet1CIDR:
     Type: String
     Default: 18.0.1.0/24
-    Description: CIDR block for the private subnet
+    Description: CIDR block for the First private subnet
 
   PublicSubnet2CIDR:
     Type: String
     Default: 18.0.2.0/24
-    Description: CIDR block for the public subnet
+    Description: CIDR block for the Second public subnet
 
   PrivateSubnet2CIDR:
     Type: String
     Default: 18.0.3.0/24
-    Description: CIDR block for the private subnet
+    Description: CIDR block for the Second private subnet
 
   GitHubOwner:
     Description: Name of GitHub Owner
     Type: String
-    Default: hammadkhaliq566
+    Default: 
 
   GitHubRepo:
     Description: Name of GitHub Repo
     Type: String
-    Default: AWS-ECS-Project
+    Default: 
 
   GitHubBranch:
     Description: Name of GitHub Repo Branch
     Type: String
-    Default: master
+    Default: 
 
   GitHubOAuthToken:
     Type: String
     NoEcho: true
-    Default: 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
+    Default: 
 
   BuckerName:
     Description: S3 Bucket Name
     Type: String
-    Default: ecs-deployment-devops-project
+    Default: 
 
   NotificationEmail:
     Type: String
     Description: Email address where notifications will be sent
-    Default: ch.hammad.khaliq@gmail.com
+    Default: 
 
 Resources:
   PrivateVPC:
@@ -247,7 +247,7 @@ Resources:
     Type: AWS::ECS::Service
     Properties:
       Cluster: ECS-Cluster-FlaskApp
-      TaskDefinition: arn:aws:ecs:us-east-1:433337163311:task-definition/TaskDefinatioECS-Service:3
+      TaskDefinition: <TASK-DEFINATION PATH>
       LaunchType: FARGATE
       ServiceName: ECS-Service
       SchedulingStrategy: REPLICA
@@ -351,8 +351,8 @@ Resources:
             Statement:
               - Effect: Allow
                 Resource:
-                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/CodePipelineRole'
-                  - 'arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/CodePipelineRole:*'
+                  - 'arn:aws:logs:us-east-1:<Account-ID>:log-group:/aws/codebuild/CodePipelineRole'
+                  - 'arn:aws:logs:us-east-1:<Account-ID>:log-group:/aws/codebuild/CodePipelineRole:*'
                   - '*'
                 Action:
                   - 'logs:CreateLogGroup'
@@ -360,8 +360,8 @@ Resources:
                   - 'logs:PutLogEvents'
               - Effect: Allow
                 Resource:
-                  - 'arn:aws:s3:::ecs-deployment-devops-project*'
-                  - 'arn:aws:s3:::ecs-deployment-devops-project-*/*'
+                  - 'arn:aws:s3:::<BuckerName>*'
+                  - 'arn:aws:s3:::<BuckerName>-*/*'
                 Action:
                   - 's3:PutObject'
                   - 's3:GetObject'
@@ -381,7 +381,7 @@ Resources:
                   - 'codebuild:BatchPutTestCases'
                   - 'codebuild:BatchPutCodeCoverages'
                 Resource:
-                  - 'arn:aws:codebuild:us-east-1:433337163311:report-group/CodePipelineRole-*'
+                  - 'arn:aws:codebuild:us-east-1:<Account-ID>:report-group/CodePipelineRole-*'
               - Effect: Allow
                 Action: 'codebuild:*'
                 Resource: '*'
@@ -404,8 +404,8 @@ Resources:
             Statement:
             - Effect: Allow
               Resource:
-              - arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/CodeBuildRole
-              - arn:aws:logs:us-east-1:433337163311:log-group:/aws/codebuild/CodeBuildRole:*
+              - arn:aws:logs:us-east-1:<Account-ID>:log-group:/aws/codebuild/CodeBuildRole
+              - arn:aws:logs:us-east-1:<Account-ID>:log-group:/aws/codebuild/CodeBuildRole:*
               - "*"
               Action:
               - logs:CreateLogGroup
@@ -414,8 +414,8 @@ Resources:
               - ecr:*
             - Effect: Allow
               Resource:
-              - 'arn:aws:s3:::ecs-deployment-devops-project*'
-              - 'arn:aws:s3:::ecs-deployment-devops-project-*/*'
+              - 'arn:aws:s3:::<BuckerName>*'
+              - 'arn:aws:s3:::<BuckerName>-*/*'
               Action:
               - s3:PutObject
               - s3:GetObject
@@ -433,7 +433,7 @@ Resources:
               - codebuild:BatchPutTestCases
               - codebuild:BatchPutCodeCoverages
               Resource:
-              - arn:aws:codebuild:us-east-1:433337163311:report-group/CodeBuildRole-*
+              - arn:aws:codebuild:us-east-1:<Account-ID>:report-group/CodeBuildRole-*
             - Effect: Allow
               Action: 'codebuild:*'
               Resource: '*'
@@ -452,7 +452,7 @@ Resources:
       ServiceRole: !Ref CodeBuildRole
       Source:
         Type: GITHUB
-        Location: https://github.com/hammadkhaliq566/AWS-ECS-Project.git
+        Location: https://github.com/<GitHubOwner>/<GitHubRepo>.git
         BuildSpec: buildspec.yml
       Artifacts:
         Type: NO_ARTIFACTS
@@ -525,18 +525,63 @@ Resources:
     Properties:
       TopicName: SnsTopicCodeBuild
       Subscription:
-        - Protocol: email
-          Endpoint: ch.hammad.khaliq@gmail.com
+      - Endpoint:
+          Ref: NotificationEmail
+        Protocol: email
 
-  CodeBuildProjectNotificationRule:
-    Type: AWS::CodeStarNotifications::NotificationRule
+  EventBridgeRule:
+    Type: AWS::Events::Rule
     Properties:
-      Name: CodeBuildProjectNotificationRule
-      DetailType: FULL
-      EventTypeIds:
-        - codebuild-project-build-state-failed
-        - codebuild-project-build-state-succeeded
-      Resource: 'arn:aws:codebuild:us-east-1:433337163311:project/CodeBuildProject'
+      Name: CodeBuildEventRule
+      EventPattern:
+        Fn::Sub:
+          - '{"source": ["aws.codebuild"], "detail-type": ["Codebuild Build Phase Change"], "detail": {"completed-phase": ["SUBMITTED", "PROVISIONING", "DOWNLOAD_SOURCE", "INSTALL", "PRE_BUILD", "BUILD", "POST_BUILD", "UPLOAD_ARTIFACTS", "FINALIZING"], "completed-phase-status": ["TIMED_OUT", "STOPPED", "FAILED", "SUCCEEDED", "FAULT", "CLIENT_ERROR"], "project-name": ["${project_name}"]}}'
+          - project_name:
+              Ref: CodeBuildProject
+      State: ENABLED
+      RoleArn: !GetAtt SampleNotificationRuleRole.Arn
       Targets:
-        - TargetAddress: !Ref SnsTopicCodeBuild
-          TargetType: SNS
+        - Arn: !Ref SnsTopicCodeBuild
+          Id: CodeBuildProject
+          InputTransformer:
+              InputPathsMap:
+                build-id: "$.detail.build-id"
+                project-name: "$.detail.project-name"
+                completed-phase: "$.detail.completed-phase"
+                completed-phase-status: "$.detail.completed-phase-status"
+              InputTemplate: |
+                "Build '<build-id>' for build project '<project-name>' has completed the build phase of '<completed-phase>' with a status of '<completed-phase-status>'."
+
+  SnsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SnsTopicCodeBuild
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref SnsTopicCodeBuild
+
+  SampleNotificationRuleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - "sns:Publish"
+                Effect: Allow
+                Resource: '*'
+            Version: '2012-10-17'
+          PolicyName: sample-notification-rule-role-policy
