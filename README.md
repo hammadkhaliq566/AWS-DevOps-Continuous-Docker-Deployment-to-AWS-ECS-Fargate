@@ -61,13 +61,15 @@ Here are the prerequisites for this solution:
 - __AWS CloudFormation__: All of the resource generation of this solution is described in CloudFormation which is a declarative code language that can be written in YAML.
 ### Deployment Steps
 
-1. Clone this GitHub repository to your local machine.
+1. Fork this GitHub repository.
+  
+2. Clone to you local Machine
 
-2. Modify the necessary parameters in the CloudFormation templates to match your requirements, such as region, VPC settings, etc.
+3. Modify the necessary parameters in the CloudFormation templates to match your requirements, such as region, VPC settings, etc.
 
-3. Deploy the CloudFormation stack that creates the VPC, subnets, and ECS cluster etc
+4. Deploy the CloudFormation stack that creates the VPC, subnets, and ECS cluster etc
 
-4. Sign in to the AWS Management Console and navigate to the CloudFormation service.
+5. Sign in to the AWS Management Console and navigate to the CloudFormation service.
    
 Click on the "Create Stack" button to start creating a new stack.
 Choose a template:
