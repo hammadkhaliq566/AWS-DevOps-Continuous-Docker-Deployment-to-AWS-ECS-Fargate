@@ -76,16 +76,24 @@ Choose a template:
 In the "Choose a template" section, select "Template is ready" and "Upload a template file."
 Click on "Choose file" and select the CloudFormation template file from your local machine.
 Click "Next" to proceed.
+
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/3a89525f8f804d564b4048e2c9f299a20783ae8e/resources/cloudformation%201.png)
-7. In the "Specify stack details" section, provide a Stack Name to identify your CloudFormation stack and Click "Next" to proceed 
+
+7. In the "Specify stack details" section, provide a Stack Name to identify your CloudFormation stack and Click "Next" to proceed
+   
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/3a89525f8f804d564b4048e2c9f299a20783ae8e/resources/cloudformation%202.png)
+
 8. Review the settings you have chosen for the CloudFormation stack.
 If everything looks correct, click "Create stack" to start the stack creation process.
+
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/3a89525f8f804d564b4048e2c9f299a20783ae8e/resources/cloudformation%203.png)
+
 9. Monitor the stack creation:
 The stack creation process may take a few minutes to complete. You can monitor the progress in the AWS CloudFormation console.
 Once the stack creation is complete, the status will change to "CREATE_COMPLETE."
+
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/d30813a98d1c1106739dcccbaa700fcdcfc3d8a9/resources/cloudformation%204.png)
+
 10. Congratulations! You have successfully created a CloudFormation stack using the AWS Management Console. The stack should now be up and running, and you can access the resources created by the stack, such as the VPC, subnets, ECS cluster, ALB, etc.
 
 ### Let's take a look at some of the resources
