@@ -98,15 +98,19 @@ Once the stack creation is complete, the status will change to "CREATE_COMPLETE.
 
 ### Let's take a look at some of the resources
 1. __VPC__:
+   
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/5b29b306d1595c6843d1500cf460f1dd71b90f23/resources/cloudformation%208.png)
 
 2. __ECS Service__:
+   
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/5b29b306d1595c6843d1500cf460f1dd71b90f23/resources/cloudformation%205.png)
 
 3. __ECR Repository__:
+   
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/5b29b306d1595c6843d1500cf460f1dd71b90f23/resources/cloudformation%206.png)
 
 4. __Application Load Balancer (ALB)__:
+   
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/5b29b306d1595c6843d1500cf460f1dd71b90f23/resources/cloudformation%207.png)
 
 ### To Access Application
