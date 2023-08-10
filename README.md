@@ -133,12 +133,14 @@ Open the app.py file of your application.
 Locate the section responsible for the background color.
 Change the background color to green.
 Save the changes.
+
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/a2f3f8a4a0abf4b890983fa0f5e8fd30baa7e751/resources/changing%20Code.png)
 
 2. Commit Changes to GitHub:
    
 Push the modified app.py file to your GitHub repository.
 Ensure that the changes are successfully pushed to the main branch.
+
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/a2f3f8a4a0abf4b890983fa0f5e8fd30baa7e751/resources/git%20commands.png)
 
 3. Check the AWS CodePipeline:
@@ -146,6 +148,7 @@ Ensure that the changes are successfully pushed to the main branch.
 Navigate to the AWS Management Console and go to the CodePipeline service.
 Locate the CodePipeline associated with your project.
 You will notice that the pipeline has been triggered automatically due to the code change.
+
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/a2f3f8a4a0abf4b890983fa0f5e8fd30baa7e751/resources/pipeline-triggered.png)
 
 4. Observe the Deployment:
@@ -153,6 +156,7 @@ You will notice that the pipeline has been triggered automatically due to the co
 Once the pipeline starts executing, it will build the Docker image with the updated code.
 The new Docker image will be pushed to the Amazon ECR repository.
 The AWS CodeDeploy stage will update the ECS service, ensuring a rolling update without downtime.
+
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/a2f3f8a4a0abf4b890983fa0f5e8fd30baa7e751/resources/cloudformation%209.png)
 
 5. View the Updated Green App:
@@ -164,6 +168,7 @@ Once the deployment is complete, you will see the "Running" status for the tasks
 To access the updated green app, copy the ALB DNS name from the CloudFormation output section.
 Open your web browser and paste the ALB DNS name in the address bar.
 Hit "Enter" or click "Go," and you will see the new green app with the updated background color.
+
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/a2f3f8a4a0abf4b890983fa0f5e8fd30baa7e751/resources/green%20app.png)
 
 ### CleanUp Resources
