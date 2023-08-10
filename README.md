@@ -89,13 +89,16 @@ Once the stack creation is complete, the status will change to "CREATE_COMPLETE.
 10. Congratulations! You have successfully created a CloudFormation stack using the AWS Management Console. The stack should now be up and running, and you can access the resources created by the stack, such as the VPC, subnets, ECS cluster, ALB, etc.
 
 ### Let's take a look at some of the resources
-__VPC__:
+1. __VPC__:
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/5b29b306d1595c6843d1500cf460f1dd71b90f23/resources/cloudformation%208.png)
-__ECS Service__:
+
+2. __ECS Service__:
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/5b29b306d1595c6843d1500cf460f1dd71b90f23/resources/cloudformation%205.png)
-__ECR Repository__:
+
+3. __ECR Repository__:
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/5b29b306d1595c6843d1500cf460f1dd71b90f23/resources/cloudformation%206.png)
-__Application Load Balancer (ALB)__:
+
+4. __Application Load Balancer (ALB)__:
 ![Alt](https://github.com/hammadkhaliq566/AWS-DevOps-Continuous-Docker-Deployment-to-AWS-ECS-Fargate/blob/5b29b306d1595c6843d1500cf460f1dd71b90f23/resources/cloudformation%207.png)
 
 ### To Access Application
